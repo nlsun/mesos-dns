@@ -3,16 +3,18 @@
 package records
 
 import (
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"crypto/sha1"
 
 	"github.com/mesosphere/mesos-dns/logging"
 	"github.com/mesosphere/mesos-dns/records/labels"
@@ -170,15 +172,11 @@ func (rg *RecordGenerator) loadWrap(ip string, port string) (state.State, error)
 	return sj, err
 }
 
-// BUG: The probability of hashing collisions is too high with only 17 bits.
-// NOTE: Using a numerical base as high as valid characters in DNS names would
-// reduce the resulting length without risking more collisions.
+// Outputs a lowercase truncated sha1 sum in the extended hex alphabet
 func hashString(s string) string {
-	h := fnv.New32a()
-	_, _ = h.Write([]byte(s))
-	sum := h.Sum32()
-	lower, upper := uint16(sum), uint16(sum>>16)
-	return strconv.FormatUint(uint64(lower+upper), 10)
+	hash := sha1.Sum([]byte(s))
+	out := base32.HexEncoding.EncodeToString(hash[:])
+	return strings.ToLower(out[:6])
 }
 
 // attempt to translate the hostname into an IPv4 address. logs an error if IP

@@ -205,20 +205,20 @@ func TestInsertState(t *testing.T) {
 		{rg.SRVs, "_poseidon._tcp.marathon.mesos.", nil},
 		{rg.SRVs, "_leader._tcp.mesos.", []string{"leader.mesos.:5050"}},
 		{rg.SRVs, "_liquor-store._tcp.marathon.mesos.", []string{
-			"liquor-store-17700-0.marathon.mesos.:80",
-			"liquor-store-17700-0.marathon.mesos.:443",
-			"liquor-store-7581-1.marathon.mesos.:80",
-			"liquor-store-7581-1.marathon.mesos.:443",
+			"liquor-store-d0ca-0.marathon.mesos.:80",
+			"liquor-store-d0ca-0.marathon.mesos.:443",
+			"liquor-store-be2c-1.marathon.mesos.:80",
+			"liquor-store-be2c-1.marathon.mesos.:443",
 		}},
 		{rg.SRVs, "_liquor-store._udp.marathon.mesos.", nil},
 		{rg.SRVs, "_liquor-store.marathon.mesos.", nil},
 		{rg.SRVs, "_car-store._tcp.marathon.mesos.", []string{
-			"car-store-50548-0.marathon.slave.mesos.:31364",
-			"car-store-50548-0.marathon.slave.mesos.:31365",
+			"car-store-bd45-0.marathon.slave.mesos.:31364",
+			"car-store-bd45-0.marathon.slave.mesos.:31365",
 		}},
 		{rg.SRVs, "_car-store._udp.marathon.mesos.", []string{
-			"car-store-50548-0.marathon.slave.mesos.:31364",
-			"car-store-50548-0.marathon.slave.mesos.:31365",
+			"car-store-bd45-0.marathon.slave.mesos.:31364",
+			"car-store-bd45-0.marathon.slave.mesos.:31365",
 		}},
 		{rg.SRVs, "_slave._tcp.mesos.", []string{"slave.mesos.:5051"}},
 		{rg.SRVs, "_framework._tcp.marathon.mesos.", []string{"marathon.mesos.:25501"}},
@@ -261,8 +261,10 @@ func TestNTasks(t *testing.T) {
 }
 
 func TestHashString(t *testing.T) {
-	t.Skip("TODO: Increase entropy, fix the bug!")
-	fn := func(a, b string) bool { return hashString(a) != hashString(b) }
+
+	fn := func(a, b string) bool {
+		return (a == b) || (hashString(a) != hashString(b))
+	}
 	if err := quick.Check(fn, &quick.Config{MaxCount: 1e9}); err != nil {
 		t.Fatal(err)
 	}
