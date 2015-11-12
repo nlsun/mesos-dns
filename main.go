@@ -13,6 +13,7 @@ import (
 	"github.com/mesosphere/mesos-dns/records"
 	"github.com/mesosphere/mesos-dns/resolver"
 	"github.com/mesosphere/mesos-dns/util"
+	"github.com/mesosphere/mesos-dns/admin"
 )
 
 func main() {
@@ -52,6 +53,9 @@ func main() {
 		go func() { errch <- <-res.LaunchHTTP() }()
 	}
 
+	// setup administrative components
+   	admin := admin.New()
+
 	changed := detectMasters(config.Zk, config.Masters)
 	reload := time.NewTicker(time.Second * time.Duration(config.RefreshSeconds))
 	zkTimeout := time.Second * time.Duration(config.ZkDetectionTimeout)
@@ -65,8 +69,8 @@ func main() {
 	defer util.HandleCrash()
 	for {
 		select {
-		case <-reload.C:
-			res.Reload()
+		case <-reload.C: res.Reload()
+		case <-admin.Reload: res.Reload()
 		case masters := <-changed:
 			if len(masters) == 0 || masters[0] == "" { // no leader
 				timeout.Reset(zkTimeout)
