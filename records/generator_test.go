@@ -10,6 +10,11 @@ import (
 	"github.com/mesosphere/mesos-dns/logging"
 	"github.com/mesosphere/mesos-dns/records/labels"
 	"github.com/mesosphere/mesos-dns/records/state"
+	"crypto/sha1"
+	"encoding/base32"
+"strings"
+	"hash/fnv"
+	"strconv"
 )
 
 func init() {
@@ -260,12 +265,54 @@ func TestNTasks(t *testing.T) {
 	}
 }
 
-func TestHashString(t *testing.T) {
+func TestHashStringSha(t *testing.T) {
 
 	fn := func(a, b string) bool {
-		return (a == b) || (hashString(a) != hashString(b))
+		return (a == b) || (hashStringSha(a) != hashStringSha(b))
 	}
-	if err := quick.Check(fn, &quick.Config{MaxCount: 1e9}); err != nil {
+	if err := quick.Check(fn, &quick.Config{MaxCount: 1e6}); err != nil {
 		t.Fatal(err)
 	}
+}
+
+
+// Outputs a lowercase truncated sha1 sum in the extended hex alphabet
+func hashStringSha(s string) string {
+	hash := sha1.Sum([]byte(s))
+	out := base32.HexEncoding.EncodeToString(hash[:])
+	return strings.ToLower(out[:6])
+}
+
+func BenchmarkHashFNV(b *testing.B) {
+	big := "means that the loop ran 10000000 times at a speed of 282 ns per loop."
+	for i := 0; i < b.N; i++ {
+		hashStringFNV(big)
+	}
+}
+
+func BenchmarkHashSHA(b *testing.B) {
+	big := "means that the loop ran 10000000 times at a speed of 282 ns per loop."
+	for i := 0; i < b.N; i++ {
+		hashStringSha(big)
+	}
+}
+func TestHashStringFNV(t *testing.T) {
+
+	fn := func(a, b string) bool {
+		return (a == b) || (hashStringFNV(a) != hashStringFNV(b))
+	}
+	if err := quick.Check(fn, &quick.Config{MaxCount: 1e6}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+
+// Outputs a lowercase truncated sha1 sum in the extended hex alphabet
+func hashStringFNV(s string) string {
+	hasher64 := fnv.New64()
+	hasher64.Write([]byte(s))
+	hash := hasher64.Sum64()
+	foldedHash := int64(hash>>32 ^ (hash & 0xffffffff))
+	ack := strconv.FormatInt(foldedHash, 32)
+	return strings.ToLower(ack)
 }
