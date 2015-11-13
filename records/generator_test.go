@@ -283,23 +283,24 @@ func hashStringSha(s string) string {
 	return strings.ToLower(out[:6])
 }
 
-func BenchmarkHashFNV(b *testing.B) {
-	big := "means that the loop ran 10000000 times at a speed of 282 ns per loop."
-	for i := 0; i < b.N; i++ {
-		hashStringFNV(big)
-	}
-}
-
 func BenchmarkHashSHA(b *testing.B) {
-	big := "means that the loop ran 10000000 times at a speed of 282 ns per loop."
 	for i := 0; i < b.N; i++ {
 		hashStringSha(big)
 	}
 }
-func TestHashStringFNV(t *testing.T) {
+
+var big = "means that the loop ran 10000000 times at a speed of 282 ns per loop."
+
+func BenchmarkHashFNV64(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		hashStringFNV64(big)
+	}
+}
+
+func TestHashStringFNV64(t *testing.T) {
 
 	fn := func(a, b string) bool {
-		return (a == b) || (hashStringFNV(a) != hashStringFNV(b))
+		return (a == b) || (hashStringFNV64(a) != hashStringFNV64(b))
 	}
 	if err := quick.Check(fn, &quick.Config{MaxCount: 1e6}); err != nil {
 		t.Fatal(err)
@@ -308,11 +309,39 @@ func TestHashStringFNV(t *testing.T) {
 
 
 // Outputs a lowercase truncated sha1 sum in the extended hex alphabet
-func hashStringFNV(s string) string {
-	hasher64 := fnv.New64()
+func hashStringFNV64(s string) string {
+	hasher64 := fnv.New64a()
 	hasher64.Write([]byte(s))
 	hash := hasher64.Sum64()
 	foldedHash := int64(hash>>32 ^ (hash & 0xffffffff))
 	ack := strconv.FormatInt(foldedHash, 32)
 	return strings.ToLower(ack)
 }
+
+func BenchmarkHashFNV128(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		hashStringFNV128(big)
+	}
+}
+
+func TestHashStringFNV128(t *testing.T) {
+
+	fn := func(a, b string) bool {
+		return (a == b) || (hashStringFNV128(a) != hashStringFNV128(b))
+	}
+	if err := quick.Check(fn, &quick.Config{MaxCount: 1e6}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+
+// Outputs a lowercase truncated sha1 sum in the extended hex alphabet
+func hashStringFNV128(s string) string {
+	hasher128 := fnv.New128()
+	hasher64.Write([]byte(s))
+	hash := hasher64.Sum128()
+	foldedHash := int64(hash>>32 ^ (hash & 0xffffffff))
+	ack := strconv.FormatInt(foldedHash, 32)
+	return strings.ToLower(ack)
+}
+
