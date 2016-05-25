@@ -33,9 +33,77 @@ func RFC952(name string) string {
 // RFC1123 mangles a name to conform to the DNS label rules specified in RFC1123.
 // See http://www.rfc-base.org/txt/rfc-1123.txt
 func RFC1123(name string) string {
-	return string(label([]byte(name), 63, "-", "-"))
+	return string(stringTrimmerFSM([]byte(name), 63, "-", "-"))
+	//return string(label([]byte(name), 63, "-", "-"))
 }
 
+
+//%% When stripping from the accumulator left and right are reversed because it's backwards
+//label(_, [], Acc) ->
+//    string:strip(Acc, left, $-);
+//label(State, [Char0 | RestFragmentStr], Acc) when (Char0 >= $A andalso Char0 =< $Z) ->
+//    Char1 = Char0 - ($A - $a),
+//    label(State, [Char1 | RestFragmentStr], Acc);
+//label(start, FragmentStr = [Char | _RestFragmentStr], Acc) when ?ALLOWED_CHAR_GUARD(Char) ->
+//    label(middle, FragmentStr, Acc);
+//label(middle, FragmentStr, Acc0) when length(Acc0) > 62 ->
+//    Acc1 = string:strip(Acc0, left, $-),
+//    label(terminate, FragmentStr, Acc1);
+//label(middle, [Char | RestFragmentStr], Acc) when Char == $- orelse Char == $_ orelse Char == $. ->
+//    label(middle, RestFragmentStr, [$- | Acc]);
+//label(terminate, _Str, Acc) when length(Acc) == 63 ->
+//    label(terminate, [], Acc);
+//label(State, [Char | RestFragmentStr], Acc) when ?ALLOWED_CHAR_GUARD(Char) ->
+//    label(State, RestFragmentStr, [Char | Acc]);
+//label(State, [_Char | RestFragmentStr], Acc) ->
+//    label(State, RestFragmentStr, Acc).
+const (
+	START = iota
+	MIDDLE = iota
+	END = iota
+)
+
+var ALLOWED_CHARS = []byte("0123456789abcdefghijklmnopqrstuvwxyz")
+func stringTrimmerFSM(name []byte, maxlen int, left, right string) []byte {
+	// Start state
+	state := START
+	accum := make([]byte, 0, len(name))
+	name = bytes.ToLower(name)
+
+	for {
+		if len(name) == 0 {
+			return bytes.TrimRight(accum, right)
+		}
+
+		switch(state)  {
+		case START:
+			if bytes.IndexByte(ALLOWED_CHARS, name[0]) > -1 && bytes.IndexAny(name[:1], left) == -1 {
+				state = MIDDLE
+				continue
+			}
+		case MIDDLE:
+			if len(accum) >= maxlen {
+				accum = bytes.TrimRight(accum, "-")
+				state = END
+				continue
+			}
+			if name[0] == '-' || name[0] == '_' || name[0] == '.' {
+				accum = append(accum, '-')
+				name = name[1:]
+				continue
+			}
+		case END:
+			if len(accum) == maxlen {
+				name = []byte{}
+				continue
+			}
+		}
+		if bytes.IndexByte(ALLOWED_CHARS, name[0]) > -1 {
+			accum = append(accum, name[0])
+		}
+		name = name[1:]
+	}
+}
 // label computes a label from the given name with maxlen length and the
 // left and right cutsets trimmed from their respective ends.
 func label(name []byte, maxlen int, left, right string) []byte {
