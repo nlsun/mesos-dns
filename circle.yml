@@ -9,7 +9,7 @@ machine:
     - go version
 
 dependencies:
-  pre:
+  override:
     - go version
     - go get github.com/mitchellh/gox
     - go get github.com/tools/godep
@@ -26,7 +26,6 @@ dependencies:
     - sudo service mysql stop
     - sudo service postgresql stop
     - sudo service redis-server stop
-  post:
     - godep go install ./...
     - godep go test -i ./...
     - gometalinter --install
