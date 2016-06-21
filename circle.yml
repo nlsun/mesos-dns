@@ -1,7 +1,7 @@
 machine:
   pre:
-    - wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
-    - tar zxvf go1.5.1.linux-amd64.tar.gz
+    - wget https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz
+    - tar zxvf go1.6.2.linux-amd64.tar.gz
   environment:
     GOROOT: ${HOME}/go
     PATH: ${GOROOT}/bin:${PATH}
@@ -37,7 +37,7 @@ test:
   override:
     - gometalinter --concurrency=6 --cyclo-over=12 --tests --deadline=300s ./...
     - gocov test ./... -short -timeout=10m > cov.json
-    - mkdir -p $CIRCLE_TEST_REPORTS/junit && godep go test -v -timeout=10m ./... | go-junit-report > $CIRCLE_TEST_REPORTS/junit/alltests.xml
-    - godep go test -v -short -race -timeout=10m ./...
+    - mkdir -p $CIRCLE_TEST_REPORTS/junit && go test -v -timeout=10m ./... | go-junit-report > $CIRCLE_TEST_REPORTS/junit/alltests.xml
+    - go test -v -short -race -timeout=10m ./...
   post:
     - goveralls -service=circleci -gocovdata=cov.json -repotoken=$COVERALLS_REPO_TOKEN || true
